@@ -2,6 +2,7 @@
   "name": "playwright-bdd-framework",
   "private": true,
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
     "test": "bddgen && playwright test",
     "test:smoke": "bddgen && playwright test --grep @smoke",

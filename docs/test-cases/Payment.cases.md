@@ -341,12 +341,12 @@
 | **Storefronts** | vfashion, vpro |
 | **References** | FR-PAY-031, FR-PAY-021 |
 | **Preconditions** | User is able to access the storefront and has valid login credentials. vStripe is available as a payment method. |
-| **Required data keys** | `checkoutEmail`, `validPassword`, `vStripeData.cardHolderName`, `vStripeData.cardNumber`, `vStripeData.expiry`, `vStripeData.cvv`, `messages.clickPlaceOrderToProceedMsg` |
+| **Required data keys** | `paymentUser.email`, `paymentUser.password`, `vStripeData.cardHolderName`, `vStripeData.cardNumber`, `vStripeData.expiry`, `vStripeData.cvv`, `messages.paymentAuthorized` |
 
 **Actions**
 
 1. User is on homepage.
-2. User signIn using email "checkoutEmail" and password "validPassword".
+2. User signIn using email "paymentUser.email" and password "paymentUser.password".
 3. User search for product "Cotton Swabs".
 4. User clicks on first product with name "Cotton Swabs".
 5. User click on add to cart button on PDP.
@@ -354,9 +354,9 @@
 7. User click on proceed to checkout button.
 8. User click on continue button under address section
 9. User click on continue to payment button under under shipping method section
-10. When User enters payment details "vStripeCardData" for vStripe.
+10. When User enters payment details "vStripeData" for vStripe.
 11. And User click on button "payNow".
-12. Then Payment Success message "clickPlaceOrderToProceedMsg" should be displayed. 
+12. Then Payment Success message "paymentAuthorized" should be displayed. 
 13. And Button "placeOrderBtn" should be enabled.
 
 **Expected outcomes**
@@ -365,7 +365,7 @@
 - The selected product is successfully added to the cart.
 - User successfully navigates to the payment section through express checkout.
 - vStripe accepts the valid card details and authorises the payment.
-- The payment success message "clickPlaceOrderToProceedMsg" is displayed.
+- The payment success message "paymentAuthorized" is displayed.
 - The Place Order button "placeOrderBtn" is enabled.
 
 ---
