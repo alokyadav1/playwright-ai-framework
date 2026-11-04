@@ -1,0 +1,6 @@
+{
+  "vpro": {
+    "baseURL": "https://dev.vpro.example.com",
+    "apiBaseURL": "https://api.dev.vpro.example.com/v1"
+  }
+}

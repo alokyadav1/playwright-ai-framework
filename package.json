@@ -1,0 +1,32 @@
+{
+  "name": "playwright-bdd-framework",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "test": "bddgen && playwright test",
+    "test:smoke": "bddgen && playwright test --grep @smoke",
+    "test:regression": "bddgen && playwright test --grep @regression",
+    "test:i18n": "bddgen && playwright test --grep @i18n",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "check": "npm run typecheck && npm run lint && npm run secret:check",
+    "secret:keygen": "tsx scripts/secrets.ts keygen",
+    "secret:encrypt": "tsx scripts/secrets.ts encrypt",
+    "secret:decrypt": "tsx scripts/secrets.ts decrypt",
+    "secret:check": "tsx scripts/secrets.ts check",
+    "agent:inventory": "tsx scripts/agent/inventory.ts"
+  },
+  "devDependencies": {
+    "@playwright/cli": "^0.1.23",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6",
+    "cross-env": "^10.1.0",
+    "dotenv": "^18.0.9",
+    "eslint": "^10.14.0",
+    "playwright-bdd": "^9.2.1",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "vpro": {
+    "baseURL": "https://staging.vpro.example.com",
+    "apiBaseURL": "https://api.staging.vpro.example.com/v1"
+  }
+}

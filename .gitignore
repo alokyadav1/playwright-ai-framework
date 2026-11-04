@@ -1,0 +1,8 @@
+.playwright-cli/
+.features-gen/
+auth/
+.env
+test-results/
+playwright-report/
+node_modules
+.playwright

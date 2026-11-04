@@ -1,0 +1,8 @@
+{
+  "credentials": {
+    "customer": { "email": "__REQUIRED__", "password": "__REQUIRED__" }
+  },
+  "products": {
+    "simpleProduct": { "sku": "__REQUIRED__" }
+  }
+}
