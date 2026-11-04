@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import type { ApiInterceptor } from '../core/ApiInterceptor';
+import type { ApiInterceptor } from '../core/ApiInterceptor.js';
 
 export abstract class BasePage {
   constructor(

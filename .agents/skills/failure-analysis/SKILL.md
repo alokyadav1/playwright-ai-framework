@@ -28,7 +28,7 @@ Capture the error, the failing line, and the artifacts in `test-results/` (trace
 | Class | Typical signals | Action |
 |---|---|---|
 | Build error | `bddgen` missing step, TypeScript error, import error | Fix the code (gherkin-bdd, page-verification) |
-| Locator | element not found, strict mode violation, element not visible after a UI change | Confirm the product still shows the element, then use **self-healing** |
+| Locator | element not found, strict mode violation, element not visible after a UI change, or a `getByRole` locator that stopped matching after a copy or role change | Confirm the product still shows the element, then use **self-healing** |
 | API wait | timeout in `ApiHandle.wait()`, "expected 200, got 5xx" | Compare registry method, path and host with `playwright-cli requests`. Fix the entry, or remove the wait if the call is not guaranteed. A 5xx is an environment or product issue, not a test fix |
 | Timing or flakiness | passes sometimes, order-dependent | Replace with a web-first assertion or a proper API wait, fix ordering. Never a sleep, never blind retries |
 | Data | missing key, `__REQUIRED__`, decrypt failure, account locked or expired, collisions between parallel tests | Missing key: data-generator. Decrypt failure: ask the user to check the key; do not try to decrypt manually. Collision: dedicated account or generated unique data |

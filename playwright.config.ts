@@ -22,8 +22,9 @@ export default defineConfig({
   use: {
     baseURL,
     locale: browserLocale, // same LOCALE value that picks the label file
-    trace: 'on-first-retry',
+    trace: 'on',
     screenshot: 'only-on-failure',
+    "video":"on"
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });

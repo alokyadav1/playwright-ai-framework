@@ -19,6 +19,8 @@ This repository is a Playwright + playwright-bdd test automation framework. AI a
 | Diagnose a failing or flaky scenario | failure-analysis |
 | Repair a broken locator after a UI change | self-healing |
 
+Each action has one owning skill. A skill points to the owner instead of repeating its rules; when a rule changes, change it in the owner only.
+
 ## Rules that never bend
 
 - Do not invent requirements, expected results, test data, credentials or locators. If the source does not say it, write `NEEDS INPUT: ...` and ask.

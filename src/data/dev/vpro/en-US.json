@@ -11,5 +11,11 @@
   },
   "messages":{
     "paymentAuthorized":"Your payment details are securely received"
+  },
+  "products": {
+    "simpleProduct": {
+      "name": "Cotton Swabs",
+      "slug": "Cotton-Swabs"
+    }
   }
 }
