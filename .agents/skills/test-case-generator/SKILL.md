@@ -1,6 +1,6 @@
 ---
 name: test-case-generator
-description: Turn an FSD or PRD in docs/fsd into a requirements register and requirement-traceable test cases with ID, title, short description, preconditions, data required, steps and expected result. Use whenever the user adds a functional spec, asks for test cases, test scenarios, test design, coverage or traceability, even if they do not say "test case". Never invents values; unknowns are marked NEEDS INPUT.
+description: Derive requirements and traceable test cases from an FSD/PRD or explicit user-supplied requirements. Use for requested test design or specification change impact; existing approved cases and failure repairs do not need regeneration. Unknowns remain NEEDS INPUT.
 ---
 
 # Test case generator (FSD to traceable test cases)
@@ -9,7 +9,7 @@ The goal is test cases a reviewer can trace back to a sentence in the specificat
 
 ## Step 1: read the whole document first
 
-Read every file for this feature in `docs/fsd/` before writing anything. Note the structure (sections, IDs, tables, flows), business rules, validation rules, limits, messages, roles, states, store or locale differences, integrations, and non-functional statements. For a very large document, go section by section but keep one running register.
+Read the source for the in-scope behaviour and its dependencies before writing. Prefer existing files in `docs/fsd/`; explicit user-supplied requirements are also valid when recorded with their source. Do not invent a missing FSD or expand to every feature in the folder. Note sections, rules, limits, messages, roles, states, store/locale differences and integrations. For a large document, work section by section with one running register.
 
 ## Step 2: build the requirements register
 
@@ -75,7 +75,7 @@ Write `docs/test-cases/<slug>.traceability.md`: requirement to test cases, uncov
 
 ## Step 7: stop at checkpoint 1
 
-Report: requirements total / testable / covered, test case count, number with open items, top open questions. Do not start data or automation work until the user approves or says to proceed.
+Report requirements total / testable / covered, case count and open questions. A design-only request is complete here. If automation follows, planner-workflow owns CP1 and reuse of existing approval; do not ask again for unchanged approved cases or continue beyond the requested design deliverable.
 
 ## Updating an existing set
 

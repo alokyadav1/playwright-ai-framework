@@ -32,14 +32,14 @@ Dynamic locators use a placeholder and `tpl()`: `"removeBtn": "[data-sku='{sku}'
 The official playwright-cli skill documents command syntax; if it is installed, follow it. Our policy on top:
 
 1. **Open the page in a named session:** `playwright-cli -s=<slug> open <baseURL><path>`.
-2. **Authenticated pages:** load the saved login state the framework produced (`playwright-cli -s=<slug> state-load auth/<role>.json`). Do not type credentials into the CLI and do not read decrypted credentials. State files hold live session tokens; they are gitignored.
+2. **Authenticated pages:** reuse valid saved state if available (`playwright-cli -s=<slug> state-load auth/<role>.json`). This repository has no standard auth-state setup project; do not assume the file exists. If missing/expired, request user-created state or use existing authorized setup without exposing credentials. Do not create an auth subsystem during locator repair. State files hold live tokens and must stay gitignored.
 3. **Reach the exact UI state** the test case needs (refs from the snapshot, or clicks).
-4. **Save a curated snapshot:** `playwright-cli snapshot --filename=docs/snapshots/<store>/<locale>/<page>/<state>.yml`. Use `--depth` or an element ref to keep it small. The CLI also writes automatic snapshots to `.playwright-cli/`; those are gitignored scratch files.
+4. **Save a curated, sanitized snapshot:** `playwright-cli -s=<slug> snapshot --filename=docs/snapshots/<store>/<locale>/<page>/<state>.yml`. Inspect a non-sensitive region; authenticated snapshots can contain account data. Use the same `-s=<slug>` on every command, including eval, requests and state-load. The CLI also writes scratch snapshots to `.playwright-cli/`; ignored does not mean safe to share.
 5. **Choose** the best candidate from the priority table.
 6. **Verify uniqueness and visibility** with `playwright-cli eval` (for example count matches of the selector). It must match exactly one element, unless the key is intentionally a collection (`...List`, `...Row`).
-7. **Verify behaviour:** perform the action once and confirm the expected state change.
+7. **Verify behaviour:** confirm the expected state change with an authorized, safely repeatable action. Apply planner-workflow's data/reset checks before mutation; if unsafe, report behaviour verification blocked rather than claiming a verified locator.
 8. **Discover API calls** for the wait registry with `playwright-cli requests` and `playwright-cli request <n>`. Only calls on the configured `apiBaseURL` host qualify. Record method, path, status.
-9. **Write** the locator JSON (and any label keys via data-generator), then log the evidence.
+9. **Store the selected representation:** JSON selector in the locator file, or a role-plus-label expression in the owning page/component (page-verification). New label keys belong to data-generator. Log the evidence; do not create JSON for a role-only locator.
 
 Log each locator in `docs/agent-runs/<slug>/locator-log.md`:
 
@@ -65,10 +65,10 @@ Log each locator in `docs/agent-runs/<slug>/locator-log.md`:
 
 Replacing a broken locator is the same action as choosing a new one, so the same rules apply. Nothing is relaxed for a replacement: same priority table, same red flags, same uniqueness and behaviour checks.
 
-Overrides, because self-healing may write nothing except a locator value:
+For a repair:
 
 - Save the fresh snapshot to `.playwright-cli/heal/<page>-<state>.yml`, not `docs/snapshots/`.
-- Do not write `locator-log.md` or `dev-requests.md`. Report those lines in your reply and let the user approve writing them.
-- Consider only candidates that keep the existing strategy. For an existing JSON locator, those are the ranks marked "JSON" in the priority table. For an existing role-plus-label locator, they are a different role, a different accessible name (a label value change) or another existing label key. Within the strategy the priority table decides. A lower-ranked candidate that passes the checks beats a higher-ranked one that would change the strategy. If no same-strategy candidate passes, tell self-healing that a strategy change is required and stop; self-healing owns the review request.
+- self-healing records repair evidence; planner-workflow owns STATE.md and artifact policy. Do not duplicate logs or require approval just to record authorized work.
+- Rank all supported candidates preserving identity within task scope. Storage representation alone is not a reason to choose a worse locator. Return the best candidate, affected consumers and required file changes to self-healing, which owns the addressing-only boundary and label guard. Explicit user file/strategy restrictions still apply.
 
 See `references/playwright-cli.md` for a command cheat-sheet.

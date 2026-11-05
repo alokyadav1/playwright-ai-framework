@@ -49,8 +49,10 @@ Independent and parallel-safe: no scenario relies on another, no shared mutable 
 
 ## Before you say "done"
 
+Use planner-workflow's validation matrix for the selected deliverable. Documentation-only work does not require code or browser checks. For executable changes:
+
 1. `npx tsc --noEmit`, lint if a script exists, `npm run secret:check`.
-2. `npx bddgen` succeeds; the affected tags run green or are classified.
+2. `npx bddgen` succeeds for BDD consumers; affected tests execute. Report classified failures as partial/blocked, never as passing.
 3. Search your diff for: `any`, `waitForTimeout`, `console.log`, `.only`, hard-coded selectors in TS, literal test data in steps, plaintext credentials.
 4. Re-read each new file as a reviewer: is anything here not traceable to a requirement, a stored snapshot, or an existing convention?
-5. Do not run `git commit`, `git push` or any other history-changing git command. Write a suggested commit message, format `<type>(<scope>): <summary>` (for example `test(cart): add TC-CART-001..002`), into STATE.md and the final report. The user commits.
+5. Follow planner-workflow for state, git and final reporting. Suggest a commit message for edits; the user commits.

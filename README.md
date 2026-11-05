@@ -32,12 +32,25 @@ Runtime context comes from `TEST_ENV`, `STORE`, `LOCALE` (defaults `dev`, `vpro`
 
 ## Using the agent kit
 
-1. Put an FSD or PRD in `docs/fsd/` and ask your agent to follow `.agents/skills/planner-workflow/SKILL.md` (`AGENTS.md` points there).
-2. Install the official playwright-cli skill beside ours: `npx playwright-cli install --skills=agents` (run `--help` to confirm the project-level form for your version).
-3. If your agent tool looks for skills elsewhere (for example `.claude/skills`), symlink or copy `.agents/skills`.
-4. Start with one small FSD, review the test cases at checkpoint 1, and tune the skills after the first run. They are plain Markdown; edit them like code.
+Start with an ordinary prompt. [AGENTS.md](AGENTS.md) directs the agent to [planner-workflow](.agents/skills/planner-workflow/SKILL.md), which selects the flow from the requested outcome and states its scope and stopping point.
 
-Agents do not run git commit or push; they write suggested commit messages into `docs/agent-runs/<slug>/STATE.md`. Commit `docs/requirements`, `docs/test-cases`, `docs/snapshots` as the audit trail. `docs/agent-runs` is optional.
+| Example prompt | Selected flow |
+|---|---|
+| "Review the cart automation and recommend improvements" | REVIEW, findings only |
+| "Create test cases from docs/fsd/cart.md" | DESIGN, stop after cases/traceability |
+| "Automate approved TC-CART-001 and TC-CART-004" | AUTOMATE, reuse approved artifacts |
+| "Diagnose and fix TC-CART-004" | DIAGNOSE, classify before repairing |
+| "Heal the checkout button locator" | HEAL, prove identity and preserve behaviour |
+| "Refine the agent workflow to prevent task drift" | MAINTAIN, improve the responsible instructions |
+| "Run the cart checks without fixing anything" | VERIFY, results only |
+
+For a new feature, put the specification in `docs/fsd/`. New cases reach human review before automation; identified existing approved cases retain their approval. Missing data blocks only dependent work. A narrow request such as "Gherkin only" stops at that deliverable.
+
+The project includes a CLI command skill customized for these rules. Check `npx --no-install playwright-cli --help`; do not overwrite the local skill with a generic generation/healing workflow. If your agent reads another skill directory, point it to `.agents/skills` while keeping one maintained source.
+
+Multi-step editing runs record scope, decisions, approvals, attempts, evidence and the next action in STATE.md. "Continue <task>" resumes after checking current evidence; "What next?" asks for a recommendation. These are agent instructions, not a deterministic runtime router; [routing examples](.agents/skills/planner-workflow/references/routing-examples.md) document the expected decisions.
+
+Agents suggest commit messages; the user commits. New `docs/` artifacts are currently ignored by `.gitignore` even though some existing documents are tracked. Review which sanitized artifacts to track; agents do not force-add them or change ignore rules automatically.
 
 ## Scripts
 

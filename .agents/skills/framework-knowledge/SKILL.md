@@ -7,6 +7,8 @@ description: Complete map of this repository's Playwright and playwright-bdd fra
 
 This skill records the framework's conventions and the decisions behind them. It deliberately does not list every page, step or key, because such lists go stale. For the live inventory run the commands in "Ground truth" below.
 
+planner-workflow owns task routing, scope, checkpoints and completion. This map describes conventions; inspect actual consumers before editing. Examples and old run records may be stale and are not proof of current behaviour or approval.
+
 ## Layout
 
 ```
@@ -37,6 +39,8 @@ tests/                          only what executes
 
 `src/api/` holds API clients for test setup. `src/network/` holds the wait registry. They are different things.
 
+The API directories above describe the convention, not guaranteed existing wiring. The current config uses the generated BDD test directory; inspect test discovery before implementing plain API specs and identify any necessary config change within the requested scope.
+
 `core/` contains `runtime.ts` (context, loaders, `Labels` and `StoreData` types), `crypto.ts`, `ApiInterceptor.ts`, `tpl.ts`, `data-key.ts` (resolves data groups), `label-key.ts` (`getLabel`, resolves label keys passed from steps).
 
 ## Layers (each talks only to the one below)
@@ -64,7 +68,15 @@ feature -> step definitions (thin) -> pages / components / verifications / api c
 
 Loaders (in `src/core/runtime.ts`): `getRuntimeContext()`, `readStoreData()` (merges common + locale, decrypts `enc:v1:` values, returns a copy), `readStoreLabels()` (locale over en-us fallback, warns on missing keys), `readEnvConfig()` (fails fast if `apiBaseURL` is missing).
 
-Data keys are dot paths that resolve to grouped objects, read with `getByKey(data, 'credentials.customer')` from `src/core/data-key.ts`. It throws with the full path if the key is missing or if anything inside the object still holds `__REQUIRED__` (for example `credentials.admin.password`). Related data is always grouped in objects, never flat keys.
+Data keys are dot paths resolved by `getByKey(data, 'credentials.customer')` from `src/core/data-key.ts`. Related data should be grouped in objects; inspect legacy consumers before changing their key paths. The resolver throws if the path is missing or its resolved value contains `__REQUIRED__`. Do not load/decrypt data just to inspect keys; the inventory reads keys and placeholder status without printing values.
+
+## Current operational constraints
+
+- There is no standard auth-state setup project in `playwright.config.ts`; `auth/<role>.json` is a convention, not a guaranteed artifact. Locator discovery must check for usable state before authenticated inspection.
+- Existing case files include `docs/test-cases/Cart.cases.md` and `Payment.cases.md`. Reuse actual paths and stable IDs; do not duplicate them to satisfy a template filename.
+- `.gitignore` ignores `docs/` broadly, while some existing docs are tracked. New run/evidence files may remain local; check before claiming they will be included in a commit.
+- `Labels` is `Record<string, string>`, not a type derived from en-us keys. The locale label file must exist; only missing keys fall back to en-us. Label fallback is not proof of correct translated copy.
+- The current config includes retries and trace/video capture. Use planner-workflow's replay and evidence rules; artifacts can contain authenticated data. A pass after a retry does not prove stability.
 
 ## Secrets
 

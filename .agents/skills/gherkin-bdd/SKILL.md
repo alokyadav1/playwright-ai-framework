@@ -1,6 +1,6 @@
 ---
 name: gherkin-bdd
-description: Write and maintain Gherkin feature files and map every step to a step definition, reusing existing scenarios and steps first and using data keys to avoid near-duplicate steps. Use whenever creating or editing .feature files or step definitions, converting test cases into scenarios, or when the user mentions Gherkin, BDD, scenarios, steps, Given, When or Then.
+description: Write or maintain Gherkin features and thin step definitions for approved cases, reusing existing steps and data keys. Consult for BDD reviews without treating a mention of scenarios or Given/When/Then as permission to generate automation.
 ---
 
 # Gherkin and step mapping
@@ -9,8 +9,8 @@ Feature files are the readable contract; step definitions are thin glue to the p
 
 ## Inputs and outputs
 
-- Input: **approved** test cases (`docs/test-cases/<slug>.test-cases.md`). No approved test cases, no scenarios.
-- Output: `tests/features/<area>/<FeatureName>.feature`, `tests/steps/<area>.steps.ts`, and `docs/agent-runs/<slug>/step-map.md`.
+- Input for new/changed behaviour: **approved** test cases. Reuse existing paths (including `docs/test-cases/*.cases.md`) and approvals; planner-workflow owns the gate. Technical repair of existing steps uses existing case/feature contracts without regenerating cases.
+- Outputs as requested: `tests/features/<area>/<FeatureName>.feature`, step definitions in `tests/steps/<area>.steps.ts`, and a step map. A feature-only request creates no step/page implementations; record existing and unresolved mappings. Planner-workflow owns artifact policy.
 - Feature file names are PascalCase (`CartContents.feature`, not `cart-contents.feature`). Area folders stay lowercase.
 - One test case becomes one `Scenario` (or one `Scenario Outline` when the same test case runs with several data keys).
 
@@ -81,8 +81,8 @@ Mark each as **reused** or **new**. A reviewer can then see at a glance what was
 
 ## Checks before handing over
 
-1. Scenario count equals the number of in-scope test cases; every scenario has its `@TC-` tag.
-2. `npx bddgen` passes with no missing step definitions.
+1. Every in-scope case maps to its scenario or outline; count outline examples separately from case IDs. Preserve existing unrelated coverage and tags.
+2. `npx bddgen` passes after the required steps, pages and fixtures are implemented. For a feature-only deliverable, report unresolved mappings as remaining implementation instead of widening scope.
 3. No two step definitions have the same pattern; `npx bddgen export` shows no near-duplicates you introduced.
 4. Feature text contains no literal test data, credentials or expected UI text (label keys instead).
 5. Feature file names are PascalCase.

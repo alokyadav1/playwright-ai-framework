@@ -1,12 +1,11 @@
 # playwright-cli cheat-sheet
 
-Commands below match the Playwright "Coding agents" documentation at the time of writing. Run `playwright-cli --help` for your installed version. If installed locally use `npx playwright-cli ...` (some versions document `npx playwright cli ...`).
+Check the installed commands with `npx --no-install playwright-cli --help`. Prefer that local binary; do not download a different version for routine discovery. The examples below abbreviate it as `playwright-cli`. Use `-s=<slug>` on every command to address the task's session.
 
-## Install
+## Prerequisite
 
 ```bash
-npm install -D @playwright/cli@latest
-npx playwright-cli install --skills=agents   # installs the official skill beside ours; confirm the flag with --help
+npx --no-install playwright-cli --help
 ```
 
 ## Sessions (isolate each task)
@@ -15,11 +14,11 @@ npx playwright-cli install --skills=agents   # installs the official skill besid
 playwright-cli -s=<slug> open https://example.com   # named session, headless by default
 playwright-cli open <url> --headed                  # watch it
 playwright-cli list                                 # sessions
-playwright-cli close-all                            # always close when done
+playwright-cli -s=<slug> close                      # close only this task's session
 playwright-cli show                                 # live dashboard of sessions
 ```
 
-A headless session closes itself after an hour of inactivity. Close sessions you open.
+Close sessions you open. If the CLI is unavailable, report the prerequisite rather than installing packages or replacing skills as part of locator discovery.
 
 ## Look
 

@@ -55,8 +55,8 @@ Thin glue only (see gherkin-bdd). Steps call page and verification methods and r
 
 ## Finish
 
-1. `npx tsc --noEmit` after each group of files.
+1. Complete the coherent step/page/fixture slice, then apply planner-workflow's validation matrix; do not repeatedly run checks while dependencies are knowingly incomplete.
 2. Every new locator is logged and verified (locator-strategy).
-3. Run the scenario by tag; hand failures to failure-analysis.
+3. Run affected scenarios only when the selected flow calls for execution and data/auth/reset prerequisites hold. Hand failures to failure-analysis without widening the parent's scope. Report unexecuted consumers explicitly.
 
 Complete templates are in `references/templates.md`.

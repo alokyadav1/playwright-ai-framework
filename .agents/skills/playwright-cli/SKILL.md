@@ -1,10 +1,16 @@
 ---
 name: playwright-cli
-description: Automate browser interactions, test web pages and work with Playwright tests.
-allowed-tools: Bash(playwright-cli:*) Bash(npx playwright:*) Bash(npx --no-install playwright:*)
+description: Command reference for browser inspection and interaction with playwright-cli. Use when a selected repository flow needs live browser evidence; planner-workflow and specialist skills own test design, generation and repair.
+allowed-tools: Bash(playwright-cli:*) Bash(npx playwright:*) Bash(npx --no-install playwright:*) Bash(npx --no-install playwright-cli:*)
 ---
 
 # Browser Automation with playwright-cli
+
+## Repository boundary
+
+Use this skill for command syntax inside the flow selected by [planner-workflow](../planner-workflow/SKILL.md). Its examples do not authorize new tests, changed expectations, direct credential entry, publishing artifacts or global browser cleanup. Generated snippets must follow repository BDD, locator, label and verification layers. See [test-development routing](references/test-generation.md) for the owning skills.
+
+Use a task-owned named session on every command. Close only sessions/processes this task created; do not run `close-all` or `kill-all` against other work. Do not dump cookies, auth storage or request bodies containing secrets. Use saved auth state, not credential fill/type commands. Confirm supported options with the installed CLI help before relying on examples.
 
 ## Quick start
 
@@ -403,29 +409,25 @@ playwright-cli kill-all
 
 Package installation and custom `npm` scripts may require separate approval.
 
-If global `playwright-cli` command is not available, try a local version via `npx playwright cli`:
+Prefer the installed project CLI without downloading packages:
 
 ```bash
-npx --no-install playwright --version
+npx --no-install playwright-cli --help
 ```
 
-When local version is available, use `npx playwright cli` in all commands. Otherwise, install `playwright-cli` as a global command:
-
-```bash
-npm install -g @playwright/cli@latest
-```
+When available, use `npx --no-install playwright-cli` in the commands below. If unavailable, report the missing prerequisite; do not silently install a global/latest version or overwrite the repository's skills during inspection.
 
 ## Example: Form submission
 
 ```bash
-playwright-cli open https://example.com/form
-playwright-cli snapshot
+playwright-cli -s=<slug> open https://example.com/form
+playwright-cli -s=<slug> snapshot
 
-playwright-cli fill e1 "user@example.com"
-playwright-cli fill e2 "password123"
-playwright-cli click e3
-playwright-cli snapshot
-playwright-cli close
+# Non-sensitive search input; use an observed ref and task-supplied value.
+playwright-cli -s=<slug> fill <search-ref> <search-term>
+playwright-cli -s=<slug> click <search-button-ref>
+playwright-cli -s=<slug> snapshot
+playwright-cli -s=<slug> close
 ```
 
 ## Example: Multi-tab workflow
