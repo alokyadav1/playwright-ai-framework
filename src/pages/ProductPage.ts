@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 import type { ApiInterceptor } from "../core/ApiInterceptor.js";
 import type { Labels } from "../core/runtime.js";
+import productApis from "../network/product.apis.json" with { type: "json" };
 import { BasePage } from "./BasePage.js";
 
 export class ProductPage extends BasePage {
@@ -16,6 +17,8 @@ export class ProductPage extends BasePage {
   }
 
   async addToCart(): Promise<void> {
+    const addToCart = this.api.intercept(productApis.addToCart);
     await this.addToCartBtn.click();
+    await addToCart.wait();
   }
 }

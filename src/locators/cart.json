@@ -1,0 +1,8 @@
+{
+  "itemRow": "div[class*='lcs-borderRadius-2xl']",
+  "productLink": "a[href*='/{productId}?']",
+  "productImage": "a[href*='/{productId}?'] img:visible",
+  "productName": "a[href*='/{productId}?'] h2:visible",
+  "productPriceText": ".offer-amount:visible",
+  "quantityInput": "input[name='custom-input-number']:visible"
+}

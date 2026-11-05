@@ -1,0 +1,7 @@
+{
+  "viewCart": {
+    "method": "POST",
+    "path": "/carts/*/viewCart",
+    "status": 200
+  }
+}

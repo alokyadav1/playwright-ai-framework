@@ -1,6 +1,6 @@
 {
   "vpro": {
     "baseURL": "https://vpro.logixal.com/",
-    "apiBaseURL": "https://api.dev.vpro.example.com/v1"
+    "apiBaseURL": "https://headless.logixal.com"
   }
 }

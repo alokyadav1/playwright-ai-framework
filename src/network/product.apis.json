@@ -1,0 +1,7 @@
+{
+  "addToCart": {
+    "method": "POST",
+    "path": "/carts/*/addToCart",
+    "status": 200
+  }
+}

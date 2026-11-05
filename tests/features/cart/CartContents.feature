@@ -11,8 +11,9 @@ Feature: Cart access and line item display
   Scenario: Cart page is accessible to Registered User
     Given I am on the VPRO storefront homepage
     When I sign in as the "user.registered" user
+    And I add the "cart.productInStock" product to my cart
     And I navigate to my cart
-    Then the registered user's cart is displayed
+    Then the registered user's cart includes the "cart.productInStock" product
 
   @TC-CART-003 @REQ-FR-CRT-002
   Scenario: Cart page opens from header cart icon
@@ -24,6 +25,7 @@ Feature: Cart access and line item display
   Scenario: Cart page reflects real-time cart state
     Given I am on the VPRO storefront homepage
     When I sign in as the "user.registered" user
+    And I add the "cart.productInStock" product to my cart
     And I navigate to my cart
     Then the cart item list includes the "cart.productInStock" product
     And the order summary is visible
