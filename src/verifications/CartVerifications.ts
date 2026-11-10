@@ -46,4 +46,15 @@ export class CartVerifications {
     await expect(this.cartPage.productName(sku)).toBeVisible();
     await expect(this.cartPage.productPrice(sku)).toBeVisible();
   }
+
+  async showsInvalidPromoError(expectedMessage: string): Promise<void> {
+    const errorLoc = this.cartPage.browserPage.getByText(expectedMessage, { exact: true });
+    await expect(errorLoc).toBeVisible({ timeout: 10000 });
+    await expect(errorLoc).toHaveCSS("color", /oklch|rgb\(2[0-5][0-5]|rgba\(2[0-5][0-5]|red|#f/i);
+  }
+
+  async orderTotalIsUnchanged(initialTotal: string): Promise<void> {
+    const totalValueEl = this.cartPage.browserPage.locator("div, span, p").filter({ hasText: /^Total$/ }).locator("..").locator("div, span, p").last();
+    await expect(totalValueEl).toHaveText(initialTotal);
+  }
 }

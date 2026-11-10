@@ -13,5 +13,9 @@
   },
   "products": {
     "simpleProduct": { "sku": "__REQUIRED__" }
+  },
+  "promo": {
+    "invalidPromoCode": "INVALID123",
+    "validPromoCode": "SAVE10"
   }
 }

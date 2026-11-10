@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
-import { getRuntimeContext, readEnvConfig } from './src/core/runtime';
+import { getRuntimeContext, readEnvConfig } from './src/core/runtime.js';
 
 const { browserLocale } = getRuntimeContext();
 const { baseURL } = readEnvConfig();

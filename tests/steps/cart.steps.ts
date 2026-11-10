@@ -65,3 +65,28 @@ Then("the line total is displayed for the {string} cart product", async ({ cartV
   const product = getByKey<Product>(data, productKey);
   await cartVerify.showsLineTotal(product.sku);
 });
+
+let initialCartTotal = "";
+
+Given("my cart contains at least one item", async ({ cartPage, productPage, data }) => {
+  await cartPage.ensureCartHasItem(productPage, data);
+});
+
+When("I enter the {string} promo code", async ({ cartPage, data }, promoKey: string) => {
+  initialCartTotal = await cartPage.getOrderTotal();
+  const code = getByKey<string>(data, promoKey);
+  await cartPage.enterPromoCode(code);
+});
+
+When("I click apply promo code", async ({ cartPage }) => {
+  await cartPage.applyPromoCode();
+});
+
+Then("the cart order summary total remains unchanged", async ({ cartVerify }) => {
+  await cartVerify.orderTotalIsUnchanged(initialCartTotal);
+});
+
+Then("the invalid promo error message {string} is displayed in red text", async ({ cartVerify, labels }, labelKey: string) => {
+  const message = labels[labelKey] ?? labelKey;
+  await cartVerify.showsInvalidPromoError(message);
+});

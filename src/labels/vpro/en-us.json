@@ -13,5 +13,7 @@
 	"paymentExpiryYearInput": "YY",
 	"paymentCvvInput": "CVC",
 	"paymentPayNowBtn": "PAY NOW",
-	"paymentPlaceOrderBtn": "Place Order"
+	"paymentPlaceOrderBtn": "Place Order",
+	"invalidPromoCodeMsg": "Invalid promo code. Please try again.",
+	"applyPromoBtn": "Apply"
 }

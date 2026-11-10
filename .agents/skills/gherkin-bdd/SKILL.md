@@ -25,6 +25,7 @@ Feature files are the readable contract; step definitions are thin glue to the p
 - Tags on every scenario: `@TC-<ID>` and `@REQ-<id>` for each requirement, plus `@smoke`, `@regression` or `@i18n` when the test case or user says so. Add an area tag such as `@cart` on the Feature.
 - Title = the test case title.
 - **Given** sets state (preconditions), **When** is one user action, **Then** is an observable outcome. `And` / `But` continue the previous keyword. Prefer one `When` per scenario.
+- **Preconditions in Given steps set state, not assertions:** When a test case specifies a precondition (e.g., "cart contains at least one item"), the Given step and its underlying implementation MUST actively establish that state if it is not already met (e.g., adding an item to the cart if empty), rather than merely asserting or checking the condition. Preconditions prepare the system state for the scenario execution; they are not test assertions.
 - Declarative, present tense, business language: "I open the cart", not "I click the cart icon". No selectors, no CSS, no URL paths, no waits.
 - `Background` only for steps shared by every scenario in the file.
 - Scenarios are independent; none relies on another having run.

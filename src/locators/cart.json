@@ -4,5 +4,9 @@
   "productImage": "a[href*='/{productId}?'] img:visible",
   "productName": "a[href*='/{productId}?'] h2:visible",
   "productPriceText": ".offer-amount:visible",
-  "quantityInput": "input[name='custom-input-number']:visible"
+  "quantityInput": "input[name='custom-input-number']:visible",
+  "promoInput": "div:has(> button:has-text('Apply')) input, input[placeholder*='Promo' i], input[name*='promo' i]",
+  "applyPromoBtn": "button:has-text('Apply')",
+  "promoErrorMsg": "p:has-text('Invalid promo code'), span:has-text('Invalid promo code'), div:has-text('Invalid promo code'):not(:has(div))",
+  "orderSummaryTotal": "div:has(> div:has-text('Total')) > div:last-child, div:has(> span:has-text('Total')) > span:last-child"
 }

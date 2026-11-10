@@ -1,4 +1,4 @@
-import type { Labels } from './runtime';
+import type { Labels } from './runtime.js';
 
 const PLACEHOLDER = '__REQUIRED__';
 

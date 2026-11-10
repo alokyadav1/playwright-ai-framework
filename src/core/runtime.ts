@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { decrypt, isEncrypted } from './crypto';
+import { decrypt, isEncrypted } from './crypto.js';
 
 const DEFAULT_LOCALE = 'en-us';
 const ROOT = resolve(process.cwd(), 'src');
