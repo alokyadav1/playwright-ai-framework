@@ -11,7 +11,7 @@ A locator is good when it still points at the same element after a harmless UI c
 
 - `src/locators/<page-or-component>.json`: strings used with `page.locator(...)`, for example `{ "proceedToCheckoutBtn": "[data-testid=\"cart-checkout\"]" }`.
 - One file per page or component. A header shared by many pages has its own file. A page's file never contains another page's locators.
-- Role-based locators are built in the page object, never in JSON: `page.getByRole('button', { name: this.labels.cartAddToCart })`. The accessible name comes from the labels file so it works in every locale.
+- Role-based locators are built in the page object, never in JSON: `page.getByRole('button', { name: getLabel(labels, 'productAddToCartBtn'), exact: true })`. The accessible name comes from the labels file so it works in every locale.
 - No selector strings in TypeScript. Key names follow coding-standards (`camelCase` plus a type suffix such as `Btn`, `Input`, `Row`).
 
 ## Priority (pick the first that is stable and unique)
@@ -20,38 +20,39 @@ A locator is good when it still points at the same element after a harmless UI c
 |---|---|---|---|
 | 1 | `[data-testid="..."]` | JSON | Locale-independent and agreed with developers. If missing, add the element to `dev-requests.md` and use the next best option meanwhile |
 | 2 | Stable `#id` | JSON | Reject generated ids: long digit runs, hashes, UUIDs, framework patterns such as `:r1:` |
-| 3 | Role plus accessible name from a label key | Page object (name from the label file) | `getByRole`. Needs the label to exist in every locale of the store |
+| 3 | Role plus accessible name, or associated accessible label | Page object, using validated label keys | `getByRole` or `getByLabel`, exact matching and verified scope. An exact translation assertion needs a locale-specific key |
 | 4 | Stable attribute: `[name=...]`, `[type=...]`, `[href*="/cart"]` | JSON | Locale-independent attributes only |
 | 5 | Short structural CSS scoped to a stable container | JSON | `#cart [data-row]`. Scope avoids matching header or footer duplicates |
-| Never | XPath, `nth-child`, auto-generated classes, `:has-text`, `text=`, `aria-label` or `title` selectors | n/a | They are positional, generated, or localised and break across locales |
+| 6 | Exact visible text for a required non-interactive text element | Owning page with `getByText(getLabel(labels, key), { exact: true })` | Only when stronger options fail, scoped to its container and verified as one intended match |
+| Never | XPath, `nth-child`, auto-generated classes, `:has-text`, `text=`, raw localised `aria-label` or `title` CSS selectors | n/a | Avoid positional/generated selectors and bypassing validated locale labels |
 
-Dynamic locators use a placeholder and `tpl()`: `"removeBtn": "[data-sku='{sku}']"`.
+Dynamic locators use an existing placeholder contract and `tpl()`, for example `"removeBtn": "[data-sku='{sku}']"`. `tpl` only substitutes strings and does not escape CSS. Verify the actual supported character set and escape values for their CSS context before interpolation. Never alter a placeholder name during healing.
 
 ## Discovery procedure (playwright-cli)
 
-The official playwright-cli skill documents command syntax; if it is installed, follow it. Our policy on top:
+Use [the repository CLI guide](../playwright-cli/SKILL.md) and confirm syntax with the installed CLI help. Keep the same named session on every command.
 
-1. **Open the page in a named session:** `playwright-cli -s=<slug> open <baseURL><path>`.
-2. **Authenticated pages:** load the saved login state the framework produced (`playwright-cli -s=<slug> state-load auth/<role>.json`). Do not type credentials into the CLI and do not read decrypted credentials. State files hold live session tokens; they are gitignored.
-3. **Reach the exact UI state** the test case needs (refs from the snapshot, or clicks).
-4. **Save a curated snapshot:** `playwright-cli snapshot --filename=docs/snapshots/<store>/<locale>/<page>/<state>.yml`. Use `--depth` or an element ref to keep it small. The CLI also writes automatic snapshots to `.playwright-cli/`; those are gitignored scratch files.
-5. **Choose** the best candidate from the priority table.
-6. **Verify uniqueness and visibility** with `playwright-cli eval` (for example count matches of the selector). It must match exactly one element, unless the key is intentionally a collection (`...List`, `...Row`).
-7. **Verify behaviour:** perform the action once and confirm the expected state change.
-8. **Discover API calls** for the wait registry with `playwright-cli requests` and `playwright-cli request <n>`. Only calls on the configured `apiBaseURL` host qualify. Record method, path, status.
-9. **Write** the locator JSON (and any label keys via data-generator), then log the evidence.
+1. Read approved cases and scope. Confirm the exact env/store/locale, origin, page state and any frame/container.
+2. Open a named session using `npx --no-install playwright-cli -s=<slug> open <approved-origin>`.
+3. For protected pages, preflight `auth/<env>/<store>/<locale>/<role>.json`, then use that session's `state-load` and `goto`. The owner provisions state locally. Do not type, read or decrypt credentials. Check the browser's authorized identity and ask for a refresh when state is expired.
+4. Reach the required state using current snapshot refs and approved data. Capture sanitized evidence under `docs/snapshots/<store>/<locale>/<page>/<state>.yml`. Use a small snapshot scope/depth when supported. Automatic `.playwright-cli/` snapshots remain ignored scratch output. Raw snapshots can contain account details, so keep them local and sanitize before retaining or sharing.
+5. Choose a candidate from the priority table and verify the exact locator expression, match count, visibility, enabled state when needed, container and frame. A single target must match exactly one intended element. Collections must have explicit expected meaning. Never solve duplicates with arbitrary `.first()` or `.nth()`.
+6. Verify behavior once only when the target is an authorized test environment and any mutation uses approved disposable data with reset/cleanup. Otherwise record the blocked behavior check and request what is missing. A discovery click does not replace an automated assertion.
+7. Discover guaranteed browser-visible API calls through the same session's `requests` command. Full request details may contain secrets. Keep only sanitized method, origin, path, status and non-sensitive correlation identity. Only the configured API origin/path qualifies for a wait.
+8. Store the selector in the owning module JSON, or the validated semantic locator expression in the owning page. Add labels through data-generator and record the evidence.
+9. Close only the session opened for this task.
 
 Log each locator in `docs/agent-runs/<slug>/locator-log.md`:
 
-| Key | Selector | Snapshot | Rank | Verified matches |
-|---|---|---|---|---|
-| proceedToCheckoutBtn | `[data-testid="cart-checkout"]` | docs/snapshots/vpro/en-us/cart/with-items.yml | 1 | 1 |
+| Context / state | Key and owning file | Expression | Container / frame | Evidence | Rank | Matches / behavior |
+|---|---|---|---|---|---|---|
+| dev/vpro/en-us, cart with items | proceedToCheckoutBtn, cart.json | `[data-testid="cart-checkout"]` | cart, main frame | docs/snapshots/vpro/en-us/cart/with-items.yml | 1 | 1, authorized action verified |
 
 ## Red flags (reconsider the locator)
 
 - Contains digits that look generated, or class names like `css-1x2y3z`.
 - Depends on position (`:nth-child`, `>` chains deeper than 2 levels).
-- Depends on visible text or a localised attribute.
+- Uses visible text or a localised attribute without an approved semantic strategy, validated label key and verified container scope.
 - Matches more than one element and relies on `.first()`.
 - Lives in a component used by many pages but sits in one page's file.
 
@@ -68,7 +69,9 @@ Replacing a broken locator is the same action as choosing a new one, so the same
 Overrides, because self-healing may write nothing except a locator value:
 
 - Save the fresh snapshot to `.playwright-cli/heal/<page>-<state>.yml`, not `docs/snapshots/`.
-- Do not write `locator-log.md` or `dev-requests.md`. Report those lines in your reply and let the user approve writing them.
-- Consider only candidates that keep the existing strategy. For an existing JSON locator, those are the ranks marked "JSON" in the priority table. For an existing role-plus-label locator, they are a different role, a different accessible name (a label value change) or another existing label key. Within the strategy the priority table decides. A lower-ranked candidate that passes the checks beats a higher-ranked one that would change the strategy. If no same-strategy candidate passes, tell self-healing that a strategy change is required and stop; self-healing owns the review request.
+- A locator-only repair does not rewrite approved discovery snapshots or unrelated documentation. The planner records repair evidence and STATE.md as part of the authorized workflow, including developer requests where relevant. This exception removes the original conflict with mandatory run-state recording.
+- Consider only candidates that keep the existing strategy. For an existing JSON locator, those are the ranks marked "JSON" in the priority table. For a semantic locator, retain its current method family (`getByRole`, `getByLabel` or `getByText`), container and frame. Role/name/key changes still need the self-healing contractual-semantic guards. Switching method family is a strategy change. Within the strategy the priority table decides. A lower-ranked candidate that passes the checks beats a higher-ranked one that would change the strategy. If no same-strategy candidate passes, tell self-healing that a strategy change is required and stop; self-healing owns the review request.
 
 See `references/playwright-cli.md` for a command cheat-sheet.
+
+Embedded fields use a verified `page.frameLocator(frameSelectorFromJson)` and a locator scoped inside that frame. Store the frame selector in the owning module JSON, use validated label names inside it, and never substitute an outer-page match for a frame field. If a field belongs to a third-party payment frame, confirm its authorized sandbox and approved test data first.

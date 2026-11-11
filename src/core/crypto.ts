@@ -71,3 +71,22 @@ export function decrypt(value: string): string {
     throw new Error('Decryption failed: invalid data or incorrect key');
   }
 }
+
+export function decryptDeep(node: unknown, path = ''): unknown {
+  if (typeof node === 'string') {
+    if (!isEncrypted(node)) return node;
+    try {
+      return decrypt(node);
+    } catch (e) {
+      throw new Error(`${path}: ${(e as Error).message}`); // field path, never the value
+    }
+  }
+  if (Array.isArray(node)) return node.map((v, i) => decryptDeep(v, `${path}[${i}]`));
+  if (node !== null && typeof node === 'object') {
+    return Object.fromEntries(
+      Object.entries(node).map(([k, v]) => [k, decryptDeep(v, path ? `${path}.${k}` : k)]),
+    );
+  }
+  return node;
+}
+

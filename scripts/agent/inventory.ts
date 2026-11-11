@@ -24,6 +24,9 @@ function entries(node: unknown, prefix = ''): [string, unknown][] {
   if (node !== null && typeof node === 'object' && !Array.isArray(node)) {
     return Object.entries(node).flatMap(([k, v]) => entries(v, prefix ? `${prefix}.${k}` : k));
   }
+  if (Array.isArray(node)) {
+    return node.flatMap((value, index) => entries(value, prefix ? `${prefix}.${index}` : String(index)));
+  }
   return [[prefix, node]];
 }
 

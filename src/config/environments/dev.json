@@ -1,6 +1,6 @@
 {
   "vpro": {
-    "baseURL": "https://vpro.logixal.com/",
-    "apiBaseURL": "https://api.dev.vpro.example.com/v1"
+    "baseURL": "https://store.example.invalid",
+    "apiBaseURL": "https://api.example.invalid/v1"
   }
 }

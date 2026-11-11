@@ -1,6 +1,8 @@
 import { test as base, createBdd } from "playwright-bdd";
 import { ApiInterceptor } from "../core/ApiInterceptor.js";
 import { AccountPage } from "../pages/AccountPage.js";
+import { FrameworkPage } from "../pages/FrameworkPage.js";
+import { FrameworkVerifications } from "../verifications/FrameworkVerifications.js";
 import { CartPage } from "../pages/CartPage.js";
 import { CheckoutPage } from "../pages/CheckoutPage.js";
 import { PaymentPage } from "../pages/PaymentPage.js";
@@ -17,6 +19,8 @@ import {
 } from "../core/runtime.js";
 
 type Fixtures = {
+  frameworkPage: FrameworkPage;
+  frameworkVerify: FrameworkVerifications;
   labels: Labels;
   data: StoreData;
   api: ApiInterceptor;
@@ -31,8 +35,10 @@ type Fixtures = {
 };
 
 export const test = base.extend<Fixtures>({
+  frameworkPage: ({ page }, use) => use(new FrameworkPage(page)),
+  frameworkVerify: ({ frameworkPage }, use) => use(new FrameworkVerifications(frameworkPage)),
   labels: ({}, use) => use(readStoreLabels()),
-  data: ({}, use) => use(readStoreData()),
+  data: ({}, use) => use(readStoreData({ decrypt: false })),
   api: ({ page }, use) =>
     use(new ApiInterceptor(page, readEnvConfig().apiBaseURL)),
   accountPage: ({ page, api, labels }, use) =>

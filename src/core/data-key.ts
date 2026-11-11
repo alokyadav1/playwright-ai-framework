@@ -1,3 +1,5 @@
+import { decryptDeep } from './crypto.js';
+
 const PLACEHOLDER = '__REQUIRED__';
 
 function findPlaceholder(node: unknown, path: string): string | undefined {
@@ -23,7 +25,7 @@ export function getByKey<T = unknown>(data: object, key: string): T {
     .split('.')
     .reduce<unknown>(
       (node, part) =>
-        node !== null && typeof node === 'object'
+        node !== null && typeof node === 'object' && Object.hasOwn(node, part)
           ? (node as Record<string, unknown>)[part]
           : undefined,
       data,
@@ -36,5 +38,5 @@ export function getByKey<T = unknown>(data: object, key: string): T {
   if (pending) {
     throw new Error(`Data key "${pending}" still has the __REQUIRED__ placeholder; a value must be provided`);
   }
-  return value as T;
+  return decryptDeep(value, key) as T;
 }

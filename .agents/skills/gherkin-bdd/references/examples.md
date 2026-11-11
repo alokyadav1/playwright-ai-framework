@@ -1,79 +1,84 @@
-# Example (fictional cart feature)
+# Gherkin, binding and traceability examples
 
-## `tests/features/cart/CartContents.feature`
+## Executable framework example
+
+See [FrameworkSmoke.feature](../../../../tests/features/framework/FrameworkSmoke.feature), [framework.steps.ts](../../../../tests/steps/framework.steps.ts), [FrameworkPage](../../../../src/pages/FrameworkPage.ts) and [FrameworkVerifications](../../../../src/verifications/FrameworkVerifications.ts) for a complete executable flow. Its in-memory HTML and fixed expected result belong to the framework smoke.
+
+| Case | Requirement | Outcome | Then | Verification |
+|---|---|---|---|---|
+| FW_001 | FW-SMOKE | A successful result appears | The user sees the successful framework result | FrameworkVerifications.successIsVisible |
+
+## Application scenario and owning modules
+
+The following is an authoring pattern for an approved cart case. Its data and expected outcome must come from the actual approved case. The ZIP contains no live application feature or verified catalog values.
 
 ```gherkin
 @cart
 Feature: Cart contents
-  A customer can see the products they added to the cart.
 
-  @TC-CART-001 @REQ-CART-3.1 @smoke
-  Scenario: Added product appears in the cart
-    Given I am logged in as the "customer" user
-    When I add the "simpleProduct" product to the cart
-    And I open the cart
-    Then the cart contains 1 item
-
-  @TC-CART-002 @REQ-CART-3.2
-  Scenario: Empty cart shows the empty message
-    Given I am logged in as the "customer" user
-    When I open the cart
-    Then the cart shows the empty message "cartEmptyMessage"
+  @smoke
+  Scenario: CRT_001 - Verify user can add item to cart from pdp
+    Given The user is logged in as the "credentials.customer" user
+    And The user is viewing the "products.simpleProduct" product
+    When The user adds the product to the cart
+    And The user opens the cart
+    Then The user sees the "products.simpleProduct" product in the cart
 ```
 
-## `tests/steps/cart.steps.ts`
+Each step has one intent. The cart feature reuses Account and Product behavior. Its login binding belongs to `account.steps.ts`, PDP bindings to `product.steps.ts`, and cart bindings to `cart.steps.ts`. Inspect existing expressions before authoring any of them.
+
+These binding bodies illustrate calls to existing exported APIs. Reuse existing expressions where available. The login precondition must establish the correct start page, and each missing binding and dependency is implemented together.
 
 ```ts
-import { Given, When, Then } from '../../src/fixtures';
-import { getByKey } from '../../src/core/data-key';
+import { Given } from '../../src/fixtures/index.js';
+import { getByKey } from '../../src/core/data-key.js';
 
-type Credentials = { email: string; password: string };
 type Product = { sku: string };
 
-Given('I am logged in as the {string} user', async ({ loginPage, data }, role: string) => {
-  const creds = getByKey<Credentials>(data, `credentials.${role}`);
-  await loginPage.login(creds.email, creds.password);
-});
-
-When('I add the {string} product to the cart', async ({ productPage, data }, productKey: string) => {
-  const product = getByKey<Product>(data, `products.${productKey}`);
-  await productPage.addToCart(product.sku);
-});
-
-When('I open the cart', async ({ cartPage }) => {
-  await cartPage.open();
-});
-
-Then('the cart contains {int} item(s)', async ({ cartVerify }, count: number) => {
-  await cartVerify.hasItems(count);
-});
-
-Then('the cart shows the empty message {string}', async ({ cartVerify }, labelKey: string) => {
-  await cartVerify.showsEmptyMessage(labelKey);
+Given('The user is viewing the {string} product', async ({ productPage, data }, key: string) => {
+  const product = getByKey<Product>(data, key);
+  await productPage.openBySku(product.sku);
 });
 ```
 
-## `docs/agent-runs/<slug>/step-map.md`
+```ts
+import { Then } from '../../src/fixtures/index.js';
+import { getByKey } from '../../src/core/data-key.js';
 
-| Step text | Definition | Calls | New / reused |
-|---|---|---|---|
-| `I am logged in as the {string} user` | `tests/steps/cart.steps.ts` | `LoginPage.login(email, password)` | reused |
-| `I add the {string} product to the cart` | `tests/steps/cart.steps.ts` | `ProductPage.addToCart(sku)` | new |
-| `I open the cart` | `tests/steps/cart.steps.ts` | `CartPage.open()` | new |
-| `the cart contains {int} item(s)` | `tests/steps/cart.steps.ts` | `CartVerifications.hasItems(count)` | new |
-| `the cart shows the empty message {string}` | `tests/steps/cart.steps.ts` | `CartVerifications.showsEmptyMessage(labelKey)` | new |
+type Product = { sku: string };
 
-## Scenario Outline with data keys
+Then('The user sees the {string} product in the cart', async ({ cartVerify, data }, key: string) => {
+  const product = getByKey<Product>(data, key);
+  await cartVerify.containsProduct(product.sku);
+});
+```
+
+Text assertions take label keys from the scenario, and the owning verification resolves them with `getLabel`. Add a new message step only for a distinct business outcome, preserving existing consumers.
+
+## Step map
+
+| Case / requirement | Expected outcome or action | Step | Owning binding | Existing API | Status |
+|---|---|---|---|---|---|
+| CRT_001 / approved cart rule | View the target product | The user is viewing the {string} product | product.steps.ts | ProductPage.openBySku(sku) | Confirm reused/new through export |
+| CRT_001 / approved cart rule | Add the viewed product | The user adds the product to the cart | product.steps.ts | ProductPage.addToCart() | Confirm reused/new through export |
+| CRT_001 / approved cart rule | Exact added product appears | The user sees the {string} product in the cart | cart.steps.ts | CartVerifications.containsProduct(sku) | Confirm reused/new through export |
+
+If the approved outcome also specifies product name, price, quantity or total, map each to its own assertion. The example's product-presence check covers identity only.
+
+## Outline pattern
 
 ```gherkin
-  @TC-CART-004 @REQ-CART-3.5
-  Scenario Outline: Each product type can be added
-    Given I am logged in as the "customer" user
-    When I add the "<product>" product to the cart
-    Then the cart contains 1 item
+  @regression
+  Scenario Outline: CRT_004 - Verify supported product variants can be added
+    Given The user is viewing the "<product>" product
+    When The user adds the product to the cart
+    And The user opens the cart
+    Then The user sees the "<product>" product in the cart
 
     Examples:
-      | product       |
-      | simpleProduct |
-      | bundleProduct |
+      | product                |
+      | products.simpleProduct |
+      | products.bundleProduct |
 ```
+
+Use an outline only when the approved case describes the same flow over those variants. Two rows on one configured project require `instances: 2` for that case in the scope. Each row needs independent state setup and cleanup. Never put the case ID in tags or use raw catalog values in Examples.

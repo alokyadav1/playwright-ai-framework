@@ -12,11 +12,14 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "check": "npm run typecheck && npm run lint && npm run secret:check",
-    "secret:keygen": "tsx scripts/secrets.ts keygen",
-    "secret:encrypt": "tsx scripts/secrets.ts encrypt",
-    "secret:decrypt": "tsx scripts/secrets.ts decrypt",
-    "secret:check": "tsx scripts/secrets.ts check",
-    "agent:inventory": "tsx scripts/agent/inventory.ts"
+    "secret:keygen": "node --import tsx scripts/secrets.ts keygen",
+    "secret:encrypt": "node --import tsx scripts/secrets.ts encrypt",
+    "secret:decrypt": "node --import tsx scripts/secrets.ts decrypt",
+    "secret:check": "node --import tsx scripts/secrets.ts check",
+    "agent:inventory": "node --import tsx scripts/agent/inventory.ts",
+    "agent:preflight": "node --import tsx scripts/agent/verify.ts preflight",
+    "agent:verify": "node --import tsx scripts/agent/verify.ts verify",
+    "test:framework": "npm run agent:verify -- tests/framework/scope.json"
   },
   "devDependencies": {
     "@playwright/cli": "^0.1.23",

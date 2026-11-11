@@ -1,50 +1,38 @@
-# Playwright BDD framework starter (with AI agent kit)
+# Playwright BDD framework
 
-A multi-env, multi-store, multi-locale Playwright + playwright-bdd framework with JSON locators and labels, encrypted test data, intercept-action-wait API waits, verification classes, and a set of agent skills for AI-assisted test development.
+Use your IDE's built-in coding assistant to turn an FSD into approved cases and verified Playwright scripts.
 
 ## Quick start
 
+Requires Node.js 24 and npm. Open the repository root in the IDE.
+
 ```bash
-npm install
-cp .env.example .env            # then: npm run secret:keygen  and paste the key into .env
-npx playwright install chromium # downloads the browser
-npm run check                   # typecheck + lint + secrets check
-npx bddgen export               # lists the step definitions
-npx cross-env TEST_ENV=dev STORE=vpro LOCALE=en-us npm run test:smoke
+npm ci
+npx --no-install playwright install chromium
+npm run check
+npm run test:framework
 ```
 
-Runtime context comes from `TEST_ENV`, `STORE`, `LOCALE` (defaults `dev`, `vpro`, `en-us`). The same `LOCALE` value picks the label file and sets the browser locale.
+The framework smoke uses an isolated in-memory browser page. It needs no credentials or storefront access. If the Chromium download is unavailable, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to a compatible local Chromium executable.
 
-## What is real and what is a sample
+## Apply to a storefront
 
-**Real framework code (keep):** `playwright.config.ts`, `src/core/*` (runtime loaders, crypto, `ApiInterceptor`, `tpl`, `data-key`, `label-key`), `src/pages/BasePage.ts`, `src/fixtures` wiring pattern, `scripts/secrets.ts`, `scripts/agent/inventory.ts`, `tsconfig.json`, `eslint.config.mjs`, `.agents/`, `AGENTS.md`.
+1. Create a feature branch. Put an FSD in `docs/fsd` and ask the assistant to follow `AGENTS.md`. Review the requirements and cases at CP1.
+2. Copy `.env.example` to `.env`. Set `TEST_ENV`, `STORE`, `LOCALE`, and approved test URLs. The packaged URLs and data values are placeholders. Supply approved sandbox data and encrypt secrets locally with `npm run secret:encrypt`.
+3. For protected browser discovery, the account owner signs in manually in an authorized named CLI session. Create the parent folders, then save state with `npx --no-install playwright-cli -s=task state-save auth/<env>/<store>/<locale>/<role>.json`. Keep it local and refresh it when expired.
+4. Run `npm run agent:preflight -- <scope.json>` and `npm run agent:verify -- <scope.json>`. See `tests/framework/scope.json` and the planner for the manifest. Case IDs go in scenario titles.
 
-**Illustrative sample for a fictional storefront (replace with your app):** the `vpro` URLs on `example.com`, `src/locators/*.json`, `src/network/cart.apis.json`, `src/labels/vpro/en-us.json`, `src/data/dev/vpro/common.json` (all values are `__REQUIRED__`), `LoginPage`, `ProductPage`, `CartPage`, `CartVerifications`, `tests/features/cart` (`CartContents.feature`), `tests/steps/cart.steps.ts`. The agent skills use this cart example as the pattern to follow; delete the sample once your first real feature exists.
+The ZIP includes reusable storefront page objects, step bindings, labels and data-key shapes. It includes a local smoke scenario. Bring your own storefront FSDs, cases and features. Existing step phrases remain available for reuse.
 
-## Not built yet
+## Outputs
 
-- **Auth setup project** (one saved login state per role in `auth/<role>.json`). The locator-strategy and self-healing skills expect it so the agent can explore logged-in pages without handling credentials. The sample `Given I am logged in...` step logs in through the UI instead.
-- Nothing here has been run against a real browser or a real app. See "Verified" below.
+- Requirements and cases can be tracked. Browser state, raw snapshots, reports and local run state are ignored.
+- Case results are in `playwright-report/agent/agent-summary.json`. Keep raw reports, traces and screenshots private. Share sanitized excerpts.
+- Runs default to one worker and zero retries. Increase concurrency after proving isolation and cleanup for mutable test data.
+- CI runs the static checks and local smoke. A live storefront requires separately authorized context and data.
 
-## Verified when this was assembled
+## Validate an IDE assistant
 
-`npm install`, `tsc --noEmit`, `eslint .`, `bddgen`, `bddgen export`, `playwright test --list`, the secrets CLI (`check`, plaintext detection, wrong-key field-path errors), crypto and loader round trip (including a trailing newline in the key), and the `ApiInterceptor` matching rules (host, method, path, wildcard, status, unobserved rejection) against a fake page. Browser runs are not verified.
+Use a fresh coding session and a small FSD on a feature branch. Confirm that the assistant stops after producing cases for CP1. Approve the cases, then leave one required input pending to exercise CP2. After supplying it, verify the title IDs, module ownership and outcome-to-assertion mapping. Repeat the same request and check for duplicate cases and steps. Run this exercise once in each IDE you support.
 
-## Using the agent kit
-
-1. Put an FSD or PRD in `docs/fsd/` and ask your agent to follow `.agents/skills/planner-workflow/SKILL.md` (`AGENTS.md` points there).
-2. Install the official playwright-cli skill beside ours: `npx playwright-cli install --skills=agents` (run `--help` to confirm the project-level form for your version).
-3. If your agent tool looks for skills elsewhere (for example `.claude/skills`), symlink or copy `.agents/skills`.
-4. Start with one small FSD, review the test cases at checkpoint 1, and tune the skills after the first run. They are plain Markdown; edit them like code.
-
-Agents do not run git commit or push; they write suggested commit messages into `docs/agent-runs/<slug>/STATE.md`. Commit `docs/requirements`, `docs/test-cases`, `docs/snapshots` as the audit trail. `docs/agent-runs` is optional.
-
-## Scripts
-
-| Script | Purpose |
-|---|---|
-| `test`, `test:smoke`, `test:regression`, `test:i18n` | `bddgen` then run, optionally filtered by tag |
-| `report` | open the last HTML report |
-| `typecheck`, `lint`, `check` | quality gate (`check` runs typecheck, lint and the secrets check) |
-| `secret:keygen`, `secret:encrypt`, `secret:decrypt`, `secret:check` | encryption tooling (agents never run `secret:decrypt`) |
-| `agent:inventory` | existing steps, pages, locator, network, label and data keys; `pending` lists `__REQUIRED__` values |
+For a runner negative control, set `FRAMEWORK_NEGATIVE_CONTROL=1` and run `npm run test:framework`. The framework smoke should fail and the summary should report `FW_001` as failed. Clear that variable before the next normal run.

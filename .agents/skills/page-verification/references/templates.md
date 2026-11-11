@@ -1,142 +1,64 @@
-# Templates (fictional cart example)
+# Implementation references
 
-## `src/locators/cart.json`
+- [AccountPage](../../../../src/pages/AccountPage.ts) uses JSON and accessible-name locators.
+- [CartVerifications](../../../../src/verifications/CartVerifications.ts) uses page-owned locators and web-first assertions.
+- [Fixture registry](../../../../src/fixtures/index.ts) defines the custom BDD instance and fixture names.
+- [ApiInterceptor](../../../../src/core/ApiInterceptor.ts) accepts an optional response-correlation predicate for overlapping calls.
 
-```json
-{
-  "itemRows": "[data-testid=\"cart-item\"]",
-  "emptyMessageText": "[data-testid=\"cart-empty\"]",
-  "proceedToCheckoutBtn": "[data-testid=\"cart-checkout\"]",
-  "removeBtn": "[data-testid=\"cart-remove-{sku}\"]"
-}
-```
-
-## `src/network/cart.apis.json`
-
-```json
-{
-  "viewCart": { "method": "GET", "path": "/cart/view", "status": 200 },
-  "addToCart": { "method": "POST", "path": "/cart/items", "status": 200 }
-}
-```
-
-## `src/labels/vpro/en-us.json`
-
-```json
-{
-  "cartAddToCart": "Add To Cart",
-  "cartEmptyMessage": "Your cart is empty"
-}
-```
-
-## `src/pages/BasePage.ts`
-
-```ts
-import type { Page } from '@playwright/test';
-import type { ApiInterceptor } from '../core/ApiInterceptor';
-
-export abstract class BasePage {
-  constructor(
-    protected readonly page: Page,
-    protected readonly api: ApiInterceptor,
-  ) {}
-}
-```
-
-## `src/pages/CartPage.ts`
+## Imports and fixture contracts
 
 ```ts
 import type { Locator, Page } from '@playwright/test';
-import type { ApiInterceptor } from '../core/ApiInterceptor';
-import type { Labels } from '../core/runtime';
-import { tpl } from '../core/tpl';
-import cartLocators from '../locators/cart.json';
-import cartApis from '../network/cart.apis.json';
-import { BasePage } from './BasePage';
-
-export class CartPage extends BasePage {
-  private readonly locators = cartLocators;
-  private readonly apis = cartApis;
-
-  readonly itemRows: Locator;
-  readonly emptyMessage: Locator;
-
-  constructor(page: Page, api: ApiInterceptor, private readonly labels: Labels) {
-    super(page, api);
-    this.itemRows = page.locator(this.locators.itemRows);
-    this.emptyMessage = page.locator(this.locators.emptyMessageText);
-  }
-
-  async open(): Promise<void> {
-    const viewCart = this.api.intercept(this.apis.viewCart); // 1. intercept
-    await this.page.goto('/cart');                            // 2. action
-    await viewCart.wait();                                    // 3. wait
-  }
-
-  async proceedToCheckout(): Promise<void> {
-    await this.page.locator(this.locators.proceedToCheckoutBtn).click();
-  }
-
-  async removeItem(sku: string): Promise<void> {
-    await this.page.locator(tpl(this.locators.removeBtn, { sku })).click();
-  }
-
-  async addToCart(): Promise<void> {
-    const addToCart = this.api.intercept(this.apis.addToCart);
-    await this.page.getByRole('button', { name: this.labels.cartAddToCart }).click();
-    await addToCart.wait();
-  }
-}
+import { getLabel } from '../core/label-key.js';
+import type { Labels } from '../core/runtime.js';
+import accountLocators from '../locators/account.json' with { type: 'json' };
 ```
 
-## `src/verifications/CartVerifications.ts`
+Use the real module file and constructor being extended. AccountPage, ProductPage and CartPage currently extend BasePage and receive `(page, api, labels)`. CartVerifications currently receives CartPage only. Add labels to a verification constructor and its fixture only when a new approved text assertion needs them. Keep existing callers valid.
+
+The data fixture uses `readStoreData({ decrypt: false })`. Bindings resolve only the selected entity with `getByKey<T>(data, key)`. Do not switch the fixture back to eager whole-file decryption.
+
+## Page and assertion bodies
+
+Build application CSS locators from the owning JSON. Semantic names come from validated labels, with scope and exact matching chosen from browser evidence.
 
 ```ts
-import { expect } from '@playwright/test';
-import { getLabel } from '../core/label-key';
-import type { Labels } from '../core/runtime';
-import type { CartPage } from '../pages/CartPage';
-
-export class CartVerifications {
-  constructor(
-    private readonly cart: CartPage,
-    private readonly labels: Labels,
-  ) {}
-
-  async hasItems(count: number): Promise<void> {
-    await expect(this.cart.itemRows).toHaveCount(count);
-  }
-
-  async showsEmptyMessage(labelKey: string): Promise<void> {
-    await expect(this.cart.emptyMessage).toHaveText(getLabel(this.labels, labelKey));
-  }
-}
-```
-
-## `src/fixtures/index.ts` (registering the cart area)
-
-```ts
-import { test as base, createBdd } from 'playwright-bdd';
-import { ApiInterceptor } from '../core/ApiInterceptor';
-import { readEnvConfig, readStoreData, readStoreLabels, type Labels, type StoreData } from '../core/runtime';
-import { CartPage } from '../pages/CartPage';
-import { CartVerifications } from '../verifications/CartVerifications';
-
-type Fixtures = {
-  labels: Labels;
-  data: StoreData;
-  api: ApiInterceptor;
-  cartPage: CartPage;
-  cartVerify: CartVerifications;
-};
-
-export const test = base.extend<Fixtures>({
-  labels: async ({}, use) => use(readStoreLabels()),
-  data: async ({}, use) => use(readStoreData()),
-  api: async ({ page }, use) => use(new ApiInterceptor(page, readEnvConfig().apiBaseURL)),
-  cartPage: async ({ page, api, labels }, use) => use(new CartPage(page, api, labels)),
-  cartVerify: async ({ cartPage, labels }, use) => use(new CartVerifications(cartPage, labels)),
+this.addToCartBtn = page.getByRole('button', {
+  name: getLabel(labels, 'productAddToCartBtn'),
+  exact: true,
 });
-
-export const { Given, When, Then } = createBdd(test);
 ```
+
+The following verification body is a pattern for a page exposing an empty-state locator. It requires an approved outcome, matching page property, labels constructor dependency and fixture wiring. It is not an existing CartVerifications API.
+
+```ts
+async showsEmptyMessage(labelKey: string): Promise<void> {
+  await expect(this.cart.emptyMessage).toHaveText(getLabel(this.labels, labelKey));
+}
+```
+
+A label key used to locate an element may be selected in the page. Expected copy is supplied by the scenario's key and validated in the verification. Assertions remain read-only. Use `toBeHidden` for hidden states and `toHaveValue` or `toHaveText` for exact values rather than reading `textContent` once.
+
+## Optional wait registry
+
+The following shape illustrates a verified registry entry and must be filled from authorized network evidence. The ZIP does not ship an application registry.
+
+```json
+{
+  "viewCart": { "method": "GET", "path": "/cart/view", "status": 200, "timeout": 10000 }
+}
+```
+
+```ts
+const viewCart = this.api.intercept(this.apis.viewCart);
+await this.page.goto('/cart');
+await viewCart.wait();
+```
+
+Use only if that call always occurs and is browser-observable. Register all required handles before the action. For overlapping responses use the optional synchronous correlation predicate and verify the needed non-sensitive request identity, such as a query SKU. The registry alone ignores query strings. UI readiness covers cached, conditional or server-side calls.
+
+## Module and component placement
+
+PDP add-to-cart actions belong in ProductPage. Cart navigation, line removal and cart assertions belong in Cart files. Login belongs in Account files. New page, verification and fixture names follow coding-standards. Extract shared components only for demonstrated shared UI. A scenario spanning modules reuses those owning files rather than copying their code into one page.
+
+Register missing fixtures lazily in `src/fixtures/index.ts` and list that file in BDD config. Clean up extra pages, contexts or other resources that a fixture creates. Do not place mutable state at module level. Typecheck each fully wired change, then run the scoped verification gate.

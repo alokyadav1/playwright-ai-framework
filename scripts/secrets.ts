@@ -3,9 +3,9 @@ import { randomBytes } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
-import { decrypt, encrypt, isEncrypted } from '../src/core/crypto';
+import { decrypt, encrypt, isEncrypted } from '../src/core/crypto.js';
 
-const SENSITIVE_KEY = /pass(word)?|secret|token|email/i;
+const SENSITIVE_KEY = /pass(word)?|secret|token|email|cardnumber|cvv|cvc/i;
 const PLACEHOLDER = '__REQUIRED__'; // reported by `npm run agent:inventory pending`, not a plaintext secret
 
 // Hidden prompt: the value never lands in shell history or the terminal.

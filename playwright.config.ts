@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
-import { getRuntimeContext, readEnvConfig } from './src/core/runtime';
+import { getRuntimeContext, readEnvConfig } from './src/core/runtime.js';
 
 const { browserLocale } = getRuntimeContext();
 const { baseURL } = readEnvConfig();
@@ -14,17 +14,18 @@ const testDir = defineBddConfig({
 
 export default defineConfig({
   testDir,
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 4 : undefined,
-  reporter: [['html', { open: 'never' }], ['junit', { outputFile: 'junit.xml' }]],
+  fullyParallel: false,
+  forbidOnly: true,
+  retries: 0,
+  workers: 1,
+  reporter: [['html', { open: 'never' }], ['junit', { outputFile: 'test-results/junit.xml' }]],
   use: {
     baseURL,
+    launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE },
     locale: browserLocale, // same LOCALE value that picks the label file
-    trace: 'on',
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    "video":"on"
+    video: 'off',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });

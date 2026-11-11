@@ -16,9 +16,9 @@ Test data has two failure modes: missing (the test crashes) and invented (the te
 | UI text and messages | `src/labels/{store}/{locale}.json` (en-us is the fallback) |
 | Base URL and API base URL per environment and store | `src/config/environments/{env}.json`. **Not written by this skill**, see below |
 
-Use the current `TEST_ENV`, `STORE`, `LOCALE` unless the task names others.
+Use the effective `TEST_ENV`, `STORE`, `LOCALE` unless the task names others. Use lowercase locale filenames. A scope must match the runtime context.
 
-**Why URLs are not this skill's job.** Test cases describe behaviour; they never say where the application lives. Base URLs and API base URLs are environment configuration that the team owns. They differ per environment and store, and `apiBaseURL` is also what restricts API waits to your own backend. The agent cannot know them, and a guessed URL would point tests at the wrong system. So this skill never writes or edits that file. It only checks it: if a test case needs an environment or store that has no entry in `src/config/environments/{env}.json`, or an entry lacks `baseURL` or `apiBaseURL`, add a row to `data-requests.md` (group `config`, the file, what is missing) and stop at checkpoint 2. Page paths such as `/cart` are not config; they belong in page objects.
+**Why URLs are not this skill's job.** Test cases describe behaviour; they never say where the application lives. Base URLs and API base URLs are environment configuration that the team owns. They differ per environment and store, and `apiBaseURL` is also what restricts API waits to your own backend. The agent cannot know them, and a guessed URL would point tests at the wrong system. So this skill never writes or edits that file. It checks effective configuration, including `BASE_URL` and `API_BASE_URL` overrides. If the config file or store entry is absent, or an effective URL is missing, invalid or still a `.invalid` placeholder, add a row to `data-requests.md` (group `config`, the file, what is missing) and block the affected context at checkpoint 2. The team supplies approved HTTP(S) URLs. Page paths such as `/cart` are not config; they belong in page objects.
 
 ## Group related data in objects
 
@@ -41,37 +41,38 @@ Data that describes one thing lives together in one object. The object is the un
 
 Rules, with the reason for each:
 
-1. **One object per entity, named for its role.** `credentials.customer`, `products.simpleProduct`, `addresses.billing`. A reader (and a step like `Given I am logged in as the "customer" user`) refers to the whole thing, so there is one name to remember instead of five.
+1. **One object per entity, named for its role.** `credentials.customer`, `products.simpleProduct`, `addresses.billing`. A reader (and a step like `Given The user is logged in as the "credentials.customer" user`) refers to the whole thing, so there is one name to remember instead of five.
 2. **Never flatten.** No JSON key that contains a dot (`"user.email": "..."`), and no sibling keys that spell out the grouping (`customerEmail`, `customerPassword`). Flat keys multiply, drift apart, and cannot be passed around as a unit.
-3. **Test cases, scenarios and steps reference the group** (`customer`, `simpleProduct`), never a single attribute. Step definitions read the attributes (`creds.email`, `product.sku`). Data required in a test case names the group and lists the attributes it needs.
-4. **A new attribute goes inside the existing object**, not into a new top-level key.
+3. **Test cases and scenarios normally reference the full entity path** (`credentials.customer`, `products.simpleProduct`), while existing steps may accept a short key with an explicit documented prefix. Reuse the existing binding contract. Do not introduce an ambiguous second resolution convention. Step definitions read the attributes (`creds.email`, `product.sku`). Data required in a test case names the group and lists the attributes it needs.
+4. **A new attribute belongs inside its entity object**, not in a new top-level key. Check existing consumers first. `getByKey` rejects the whole resolved group when any child, including an array element, is pending. If a new pending attribute would block existing cases, use a meaningful sibling variant with its own readiness. Resolve a leaf only when that is the approved existing consumer contract.
 5. **Group by entity, not by data type.** Not `emails: {...}` and `passwords: {...}`; one `credentials.customer` holding both.
 6. **Variants of the same entity are sibling objects with identical attribute names** (`customer` and `admin` both have `email` and `password`), so one step can serve every variant.
 7. **Keep it shallow**, about three levels: group, entity, attribute.
-8. **Placeholders are per attribute.** Write `{ "email": "__REQUIRED__", "password": "__REQUIRED__" }`, never `"__REQUIRED__"` in place of the whole object. Then `npm run agent:inventory pending` lists exactly which attribute is missing.
+8. **Placeholders are per attribute.** Write `{ "email": "__REQUIRED__", "password": "__REQUIRED__" }`, never `"__REQUIRED__"` in place of the whole object. Use `npm run agent:inventory -- pending` to discover placeholders, then scoped preflight to validate the paths actually consumed by the selected cases.
 9. **Sensitive attributes inside an object stay encrypted** (`enc:v1:`), exactly as before.
 10. **Existing flat keys are not rewritten silently.** Changing a structure breaks steps that read it. Report them in `data-requests.md` as a refactor suggestion and ask first.
 
-Labels are the exception. They stay flat camelCase with an area prefix (`cartEmptyMessage`), because the labels loader returns a flat key-to-text map that is merged over the en-us fallback.
+Labels are the exception. They stay flat camelCase with an area prefix (`cartEmptyMessage`), because the labels loader returns a flat key-to-text map merged over the en-us fallback. Resolve consumed labels with `getLabel`. Exact translation requirements belong in scope `localizedLabels`, which requires the key in the chosen locale itself.
 
 ## Procedure
 
-1. **See what exists.** Run `npm run agent:inventory data` and `npm run agent:inventory labels`. Never open a data file to read values of fields that look encrypted or sensitive.
+1. **See what exists.** Run `npm run agent:inventory -- data` and `npm run agent:inventory -- labels`. Inventory prints key paths, not secret values. Never open a data file to read values of fields that look encrypted or sensitive.
 2. **Collect what is needed.** Read "Data required" of every in-scope test case: each group and the attributes it needs. Add the messages and texts stated in expected results (these become labels).
 3. **Name the groups.** Role not value (`products.simpleProduct`, not `products.teeShirtRed`). Reuse an existing group before creating a new one; if `products.simpleProduct` exists, do not add `products.simple2`. Missing attributes of an existing group are added inside it.
 4. **Add what is missing** following the value rules below. Do not overwrite or reorder existing entries.
 5. **Write `docs/agent-runs/<slug>/data-requests.md`:** group, attributes, file, why needed (test case IDs), status, who or what provides each value.
-6. **Gate.** Run `npm run agent:inventory pending`. Anything listed for in-scope data must be provided by a human before tests run: stop at checkpoint 2 with the request list.
+6. **Gate.** Put every consumed data path, label, exact localized label and required discovery auth role in the context scope. Run `npm run agent:preflight -- <scope.json>`. Block only affected cases at CP2 and continue independent approved cases. Inventory pending is a discovery aid across contexts, not the runnable gate. Ask the named owner for values that cannot be verified or generated within the approved task.
 
 ## Value rules
 
 | Kind of value | What to write |
 |---|---|
 | Stated in the FSD or test case (a rule, a limit, a message) | The value, and cite the source in data-requests.md |
-| Environment-specific identifier (SKU, account name, store id) | `"__REQUIRED__"` for that attribute and a request line |
+| Environment-specific identifier (SKU, account name, store id) | Reuse verified target-context data or verify it through authorized discovery. Otherwise `"__REQUIRED__"` for that attribute and a request line |
+| Synthetic names, addresses or unique inputs | Generate only where the task explicitly permits synthetic input, using existing project tooling and the application validation rules. Persist reusable values and their source. Never invent a catalog record, real account or integration identifier |
 | Credentials, tokens, emails of real accounts | `"__REQUIRED__"` only. Ask the user to run `npm run secret:encrypt`, paste the `enc:v1:` output into the file, and never paste a secret into the chat. Never write plaintext |
 | UI text stated in the FSD (en-us) | Add the label key with the stated text |
-| UI text for other locales | Do not guess translations. List the missing keys in data-requests.md; the loader falls back to en-us and warns |
+| UI text for other locales | Do not guess translations. List the missing keys in data-requests.md; the loader can fall back to en-us and warn, but an exact translation check remains blocked until its localized value exists |
 | Locale-specific data | Locale file only, same placeholder rules |
 
 Attributes named like password, secret, token or email must end up as `enc:v1:` strings; `npm run secret:check` fails on plaintext.
@@ -79,8 +80,8 @@ Attributes named like password, secret, token or email must end up as `enc:v1:` 
 ## Quality rules
 
 - Idempotent: running the skill twice produces no diff.
-- Label keys are identical across the locales of a store (the type of the labels object is derived from en-us).
-- When a test case mutates shared data (a cart, an order, an account), flag it in data-requests.md and suggest a dedicated account or generated unique values, so parallel runs cannot collide.
+- Keep the same intended label key set across locales. `Labels` is a runtime `Record<string, string>`, so TypeScript does not prove completeness. `getLabel` and scoped preflight validate consumed keys.
+- When a test case mutates shared data (a cart, an order, an account), record ownership, setup, reset, cleanup and retry behavior in data-requests.md. Use approved dedicated accounts or approved unique synthetic inputs. Browser contexts alone do not isolate server-side state. Keep one worker until independent and concurrent runs demonstrate isolation.
 - Keep JSON formatting as described in coding-standards.
 
 ## Example `data-requests.md`

@@ -31,12 +31,15 @@ export class ApiInterceptor {
   }
 
   /** Step 1: start listening NOW (before the action). Await the returned handle in step 3. */
-  intercept(def: EndpointDef): ApiHandle {
+  intercept(def: EndpointDef, correlate?: (response: Response) => boolean): ApiHandle {
     const pathRe = toPathRegex(def.path);
     const expected = def.status ?? 200;
 
     const pending = this.page
-      .waitForResponse((r) => this.matches(r, def.method, pathRe), { timeout: def.timeout })
+      .waitForResponse(
+        (r) => this.matches(r, def.method.toUpperCase(), pathRe) && (!correlate || correlate(r)),
+        { timeout: def.timeout ?? 10_000 },
+      )
       .then((r) => {
         if (r.status() !== expected) {
           throw new Error(`${def.method} ${def.path}: expected ${expected}, got ${r.status()}`);

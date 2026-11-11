@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { decrypt, isEncrypted } from './crypto';
+import { decryptDeep } from './crypto.js';
 
 const DEFAULT_LOCALE = 'en-us';
 const ROOT = resolve(process.cwd(), 'src');
@@ -15,8 +15,7 @@ const isObject = (v: unknown): v is Json => v !== null && typeof v === 'object' 
 
 // 'en-us' -> 'en-US', 'ar' -> 'ar' (Playwright's `locale` option expects BCP-47 casing)
 const toBrowserLocale = (l: string): string => {
-  const [lang, region] = l.split('-');
-  return region ? `${lang}-${region.toUpperCase()}` : lang;
+  return new Intl.Locale(l).toString();
 };
 
 export function getRuntimeContext(): RuntimeContext {
@@ -24,6 +23,9 @@ export function getRuntimeContext(): RuntimeContext {
   const env = (process.env.TEST_ENV ?? 'dev').toLowerCase();
   const store = (process.env.STORE ?? 'vpro').toLowerCase();
   const locale = (process.env.LOCALE ?? DEFAULT_LOCALE).toLowerCase();
+  for (const [name, value] of Object.entries({ TEST_ENV: env, STORE: store, LOCALE: locale })) {
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) throw new Error(`Invalid ${name}`);
+  }
   return { env, store, locale, browserLocale: toBrowserLocale(locale) };
 }
 
@@ -51,28 +53,10 @@ function deepMerge(base: Json, over: Json): Json {
   return out;
 }
 
-function decryptDeep(node: unknown, path = ''): unknown {
-  if (typeof node === 'string') {
-    if (!isEncrypted(node)) return node;
-    try {
-      return decrypt(node);
-    } catch (e) {
-      throw new Error(`${path}: ${(e as Error).message}`); // field path, never the value
-    }
-  }
-  if (Array.isArray(node)) return node.map((v, i) => decryptDeep(v, `${path}[${i}]`));
-  if (isObject(node)) {
-    return Object.fromEntries(
-      Object.entries(node).map(([k, v]) => [k, decryptDeep(v, path ? `${path}.${k}` : k)]),
-    );
-  }
-  return node;
-}
-
 // ---- public readers ----
 const dataCache = new Map<string, StoreData>();
 
-export function readStoreData(): StoreData {
+export function readStoreData(options: { decrypt?: boolean } = {}): StoreData {
   const { env, store, locale } = getRuntimeContext();
   const cacheKey = `${env}/${store}/${locale}`;
 
@@ -80,9 +64,10 @@ export function readStoreData(): StoreData {
     const dir = resolve(ROOT, 'data', env, store);
     const common = readJson<Json>(resolve(dir, 'common.json'));
     const localized = readJson<Json>(resolve(dir, `${locale}.json`), true);
-    dataCache.set(cacheKey, decryptDeep(deepMerge(common, localized)) as StoreData);
+    dataCache.set(cacheKey, deepMerge(common, localized));
   }
-  return structuredClone(dataCache.get(cacheKey) as StoreData); // callers cannot mutate the shared copy
+  const merged = structuredClone(dataCache.get(cacheKey) as StoreData);
+  return options.decrypt === false ? merged : (decryptDeep(merged) as StoreData);
 }
 
 const labelCache = new Map<string, Labels>();
@@ -91,20 +76,20 @@ export function readStoreLabels(): Labels {
   const { store, locale } = getRuntimeContext();
   const cacheKey = `${store}/${locale}`;
   const cached = labelCache.get(cacheKey);
-  if (cached) return cached;
+  if (cached) return { ...cached };
 
   const dir = resolve(ROOT, 'labels', store);
   const fallback = readJson<Labels>(resolve(dir, `${DEFAULT_LOCALE}.json`));
   let labels = fallback;
 
   if (locale !== DEFAULT_LOCALE) {
-    const localized = readJson<Labels>(resolve(dir, `${locale}.json`));
+    const localized = readJson<Labels>(resolve(dir, `${locale}.json`), true);
     const missing = Object.keys(fallback).filter((k) => !(k in localized));
     if (missing.length) console.warn(`[labels] ${store}/${locale} missing keys: ${missing.join(', ')}`);
     labels = { ...fallback, ...localized };
   }
   labelCache.set(cacheKey, labels);
-  return labels;
+  return { ...labels };
 }
 
 export function readEnvConfig(): EnvConfig {
@@ -117,6 +102,10 @@ export function readEnvConfig(): EnvConfig {
     baseURL: process.env.BASE_URL ?? cfg.baseURL, // CI can override
     apiBaseURL: process.env.API_BASE_URL ?? cfg.apiBaseURL,
   };
-  if (!merged.apiBaseURL) throw new Error('apiBaseURL is required (API waits depend on it)');
+  for (const [name, value] of Object.entries(merged)) {
+    if (!URL.canParse(value) || !/^https?:\/\//i.test(value)) {
+      throw new Error(`${name} must be an absolute HTTP(S) URL`);
+    }
+  }
   return merged;
 }
